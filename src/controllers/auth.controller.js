@@ -46,5 +46,24 @@ const registerSendOTP = async (req, res) => {
 
     // guui email 
 
-    
+    await sendMail({
+        to: email, 
+        subject: 'Mã xác thực đăng ký tài khoản',
+        html:`
+        <h1> Mã OPT của bạn là : <b>${otpCode}</b></h1>
+        <p>Mã có hiệu lực trong vòng 5 phút.</p>
+        <p>Vui lòng không chia sẻ mã này cho ai khác.</p>
+        `
+    });
+
+    // trả về kết quả
+
+    return res.status(200).json({
+        status: 'success',
+        message:'OTP đã gửi thành công. Vui lòng kiểm tra email'
+    });
+};
+
+module.exports = {
+    registerSendOTP
 }
