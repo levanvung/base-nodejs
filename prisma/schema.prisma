@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+// Định nghĩa model User (thay thế users table)
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  status    String   @default("active") // 'active', 'inactive', 'banned'
+  
+  // Các field mới cho việc xác thực
+  isVerified Boolean @default(false) @map("is_verified")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("users") // Map với tên bảng 'users' trong DB
+}
+// Định nghĩa model OTP (thay thế otp table)
+model Otp {
+  id          Int      @id @default(autoincrement())
+  email       String
+  otpCode     String   @map("otp_code")
+  otpType     String   @map("otp_type") // 'REGISTER', 'LOGIN', 'FORGOT_PASS'
+  expiresAt   DateTime @map("expires_at")
+  isUsed      Boolean  @default(false) @map("is_used")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  @@index([email, otpType]) // Đánh index như cũ
+  @@map("otp")
+}

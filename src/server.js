@@ -1,7 +1,20 @@
 const express = require('express');
+const errorHandler = require('@/middlewares/errorHandler');
+
 require('module-alias/register');
 const app = express();
 const config = require('./configs/config.postgres');
+
+
+app.use('/api/v1/auth', authRoutes)
+
+app.use((req, res, next) => {
+    const error = new Error('Not Found');
+    error.status = 404;
+    next(error)
+});
+
+app.use(errorHandler);
 
 // Init Database
 require('./dbs/init.postgres');
