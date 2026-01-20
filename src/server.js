@@ -20,7 +20,7 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 // Init Database
-require('./dbs/init.postgres');
+require('./dbs/init.postgres'); 
 
 app.get('/', (req, res) => {
     res.send('Hello World with PostgreSQL!');
