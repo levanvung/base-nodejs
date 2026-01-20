@@ -4,9 +4,12 @@ const errorHandler = require('@/middlewares/errorHandler');
 const authRoutes = require('@/routes/auth.routes');
 const app = express();
 const config = require('./configs/config.postgres');
+const routes = require('@/routes');
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.use('/api/v1/auth', authRoutes)
+app.use('/api', routes); 
 
 app.use((req, res, next) => {
     const error = new Error('Not Found');

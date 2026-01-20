@@ -9,9 +9,9 @@ const verifyToken = async (req, res, next) => {
 
     // client gửi dạng auth bear
 
-    if(req.headers.authorization && req.headers.authorization.startWith('Bearer'))
+    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer'))
     {
-        token = req.headres.authorization.split('')[1]; // lấy phần token sau chữ bearer
+        token = req.headers.authorization.split(' ')[1]; // lấy phần token sau chữ bearer
     }
     if(!token) {
         return next(new ErrorResponse('Không tìm thấy Token , Vui lòng đăng nhập', 401))
