@@ -3,7 +3,7 @@ const generateOTP = require('@/utils/generateOTP');
 const { sendMail } = require('@/services/email.service');
 const ErrorResponse = require('@/utils/error.response');
 const bcrypt = require('bcryptjs');
-const { generateTokens } = require('@/utils/jwt.until');
+const { generateTokens } = require('@/utils/jwt.utils');
 
 // hamf guiwr opt dangw kis 
 
@@ -165,8 +165,21 @@ const login = async (req, res) => {
     })
 
 }
+
+const getMe = async (req, res) => {
+    // req.user đã có sẵn vì đã verifyToken
+
+    return res.status(200).json({
+        status: 'success',
+        data: {
+            user: req.user
+        }
+    });
+};
+
 module.exports = {
     registerSendOTP,
     registerVerifyOTP,
-    login
+    login,
+    getMe
 }

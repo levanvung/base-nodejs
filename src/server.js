@@ -1,7 +1,7 @@
+require('module-alias/register');
 const express = require('express');
 const errorHandler = require('@/middlewares/errorHandler');
-
-require('module-alias/register');
+const authRoutes = require('@/routes/auth.routes');
 const app = express();
 const config = require('./configs/config.postgres');
 
