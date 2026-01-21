@@ -5,14 +5,16 @@ const authController = require('@/controllers/auth.controller');
 const asyncHandler = require('@/middlewares/asyncHandler')
 
 const { verifyToken } = require('@/middlewares/auth.middleware')
+const { rateLimiter } = require('@/middlewares/rateLimiter')
 
-router.post('/register/send-otp', asyncHandler(authController.registerSendOTP));
+
+router.post('/register/send-otp', rateLimiter, asyncHandler(authController.registerSendOTP));
 router.post('/register/verify-otp', asyncHandler(authController.registerVerifyOTP));
 router.post('/login', asyncHandler(authController.login));
 
 
 router.get('/me', verifyToken, asyncHandler(authController.getMe));
-router.post('/forgot-password/send-otp', asyncHandler(authController.forgotPasswordSendOTP));
+router.post('/forgot-password/send-otp',rateLimiter, asyncHandler(authController.forgotPasswordSendOTP));
 router.post('/forgot-password/reset-password', asyncHandler(authController.resetPassword));
 
 router.post('/refresh-token', asyncHandler(authController.refreshToken));
