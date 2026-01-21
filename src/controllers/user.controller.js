@@ -30,7 +30,7 @@ const getUserById = async (req, res) => {
             username: true,
             role:true,
             status: true,
-            isVerifed: true,
+            isVerified: true,
             createdAt: true,
             updatedAt: true, 
         }
@@ -90,7 +90,7 @@ const updateUserRole = async (req, res) => {
             role:true
         }
     });
-    res.status(200).josn({
+    res.status(200).json({
         status: 'success',
         data: {user}
     })
