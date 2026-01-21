@@ -6,6 +6,9 @@ const app = express();
 const config = require('./configs/config.postgres');
 const routes = require('@/routes');
 
+const { connectRabbitMQ } = require('./dbs/init.rabbitmq');
+connectRabbitMQ();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

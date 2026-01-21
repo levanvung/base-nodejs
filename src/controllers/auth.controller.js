@@ -5,6 +5,8 @@ const ErrorResponse = require('@/utils/error.response');
 const bcrypt = require('bcryptjs');
 const { generateTokens } = require('@/utils/jwt.utils');
 const redisClient = require('@/dbs/init.redis');
+const { sendEmailToQueue } = require('@/services/queue.service');
+
 
 // hamf guiwr opt dangw kis 
 
@@ -49,7 +51,7 @@ const registerSendOTP = async (req, res) => {
 
     // guui email 
 
-    await sendMail({
+    await sendEmailToQueue({
         to: email, 
         subject: 'Mã xác thực đăng ký tài khoản',
         html:`
@@ -218,7 +220,7 @@ const forgotPasswordSendOTP = async (req, res ) => {
     });
 
     // gửi email
-    await sendMail({
+    await sendEmailToQueue({
         to: email,
         subject: 'Mã xác thực quên mật khẩu',
         html: `
