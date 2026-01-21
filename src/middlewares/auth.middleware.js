@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const ErrorResponse = require('@/utils/error.response')
 const prisma = require('@/dbs/init.prisma.js');
+const redisClient = require('@/dbs/init.redis');
 
 
 const verifyToken = async (req, res, next) => {
@@ -15,6 +16,10 @@ const verifyToken = async (req, res, next) => {
     }
     if(!token) {
         return next(new ErrorResponse('Không tìm thấy Token , Vui lòng đăng nhập', 401))
+    }
+    const isBlacklisted = await redisClient.exists(`balcklist:${token}`);
+    if(isBlacklisted){
+        return next(new ErrorResponse('Token đã bị vo hiệu hóa', 401))
     }
     try {
         // very file txem token có phải do mình ký không, có hết hạn không

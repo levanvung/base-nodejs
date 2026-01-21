@@ -4,6 +4,7 @@ const { sendMail } = require('@/services/email.service');
 const ErrorResponse = require('@/utils/error.response');
 const bcrypt = require('bcryptjs');
 const { generateTokens } = require('@/utils/jwt.utils');
+const redisClient = require('@/dbs/init.redis');
 
 // hamf guiwr opt dangw kis 
 
@@ -317,6 +318,14 @@ const logout = async (req, res) => {
         where: { userId: userId }
     });
     
+    const getAccessToken = req.headers.authorization.split(' ')[1];
+    const decoded = require('jsonwebtoken').verify(getAccessToken, process.env.JWT_ACCESS_KEY);
+    
+    const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+    if (ttl > 0) {
+        await redisClient.set(`blacklist:${getAccessToken}`, 1, 'EX', ttl);
+    }
+
     return res.status(200).json({
         status: 'success',
         message: 'Đăng xuất thành công'
