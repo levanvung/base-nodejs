@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const { generateTokens } = require('@/utils/jwt.utils');
 const redisClient = require('@/dbs/init.redis');
 const { sendEmailToQueue } = require('@/services/queue.service');
-
+const { registerSchema } = require('@/utils/validation');
 
 // hamf guiwr opt dangw kis 
 
@@ -16,8 +16,9 @@ const registerSendOTP = async (req, res) => {
 
     // validate dau vao
 
-    if(!email) {
-        throw new ErrorResponse('Email is required', 400);
+   const { error } = registerSchema.validate(req.body);
+    if (error) {
+        throw new ErrorResponse(error.details[0].message, 400); 
     }
 
     const userCheck = await prisma.user.findUnique({
@@ -148,9 +149,14 @@ const login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if(!isMatch) {
-        throw new ErrorResponse('Email hoặc mật khẩu không chính xác', 400);
-    }
+     const key = `login_fail:${req.ip}`;
+     await redisClient.incr(key);
+     await redisClient.expire(key, 600);
 
+     throw new ErrorResponse('Email hoặc mật khẩu không chính xác', 400);
+        
+    }
+    await redisClient.del(`login_fail:${req.ip}`);
     // tạo token 
     const tokens = generateTokens({
         id: user.id, 

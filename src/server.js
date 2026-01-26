@@ -1,5 +1,6 @@
 require('module-alias/register');
 const express = require('express');
+const helmet = require('helmet');
 const errorHandler = require('@/middlewares/errorHandler');
 const authRoutes = require('@/routes/auth.routes');
 const app = express();
@@ -21,6 +22,8 @@ app.use((req, res, next) => {
 });
 
 app.use(errorHandler);
+
+app.use(helmet());
 
 // Init Database
 require('./dbs/init.postgres'); 
