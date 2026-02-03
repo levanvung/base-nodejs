@@ -34,5 +34,5 @@ app.get('/', (req, res) => {
 
 const PORT = config.app.port;
 app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Server running at http://${config.app.host}:${PORT}`);
 });
