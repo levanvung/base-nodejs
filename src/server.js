@@ -30,6 +30,26 @@ app.use(errorHandler);
 
 
 
+const morgan = require('morgan');
+const logger = require('@/configs/config.logger');
+
+// Logging HTTP Requests using Morgan
+const morganFormat = ':method :url :status :response-time ms';
+
+app.use(morgan(morganFormat, {
+    stream: {
+        write: (message) => {
+            const logObject = {
+                method: message.split(' ')[0],
+                url: message.split(' ')[1],
+                status: message.split(' ')[2],
+                responseTime: message.split(' ')[3]
+            };
+            logger.info(JSON.stringify(logObject));
+        }
+    }
+}));
+
 // Init Database
 require('./dbs/init.postgres'); 
 
@@ -39,5 +59,5 @@ app.get('/', (req, res) => {
 
 const PORT = config.app.port;
 app.listen(PORT, () => {
-    console.log(`Server running at http://${config.app.host}:${PORT}`);
+    logger.info(`Server running at http://${config.app.host}:${PORT}`);
 });

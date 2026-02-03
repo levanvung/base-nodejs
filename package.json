@@ -24,10 +24,13 @@
     "jsonwebtoken": "^9.0.3",
     "knex": "^3.1.0",
     "module-alias": "^2.2.3",
+    "morgan": "^1.10.1",
     "nodemailer": "^7.0.12",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "pg": "^8.16.3"
+    "pg": "^8.16.3",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11",
