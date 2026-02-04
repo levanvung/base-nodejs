@@ -146,7 +146,7 @@ const login = async (req, res) => {
         throw new ErrorResponse('Email hoặc mật khẩu không chính xác', 400);
     }
     // check pass
-
+    
     const isMatch = await bcrypt.compare(password, user.password);
     if(!isMatch) {
      const key = `login_fail:${req.ip}`;

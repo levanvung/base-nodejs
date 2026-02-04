@@ -21,6 +21,8 @@ model User {
   // Các field mới cho việc xác thực
   isVerified Boolean @default(false) @map("is_verified")
   
+  twoFactorSecret String? @map("two_factor_secret") // mã OTP bí mật (Base32)
+  isTwoFactorEnabled Boolean @default(false) @map("is_two_factor_enabled")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   keyToken KeyToken?

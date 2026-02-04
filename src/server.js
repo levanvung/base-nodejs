@@ -2,6 +2,8 @@ require('dotenv').config();
 console.log('DEBUG: GOOGLE_CLIENT_ID loaded:', process.env.GOOGLE_CLIENT_ID ? 'YES' : 'NO');
 require('module-alias/register');
 const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('@/configs/config.swagger');
 const helmet = require('helmet');
 const errorHandler = require('@/middlewares/errorHandler');
 const authRoutes = require('@/routes/auth.routes');
@@ -17,8 +19,8 @@ connectRabbitMQ();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use('/api', routes); 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use((req, res, next) => {
     const error = new Error('Not Found');
