@@ -1,15 +1,45 @@
 const express = require('express');
 const router = express.Router();
-const userController = require('@/controllers/user.controller');
+
+const UserController = require('@/controllers/user.controller');
 const asyncHandler = require('@/middlewares/asyncHandler');
 const { verifyToken } = require('@/middlewares/auth.middleware');
 const authorize = require('@/middlewares/authorize');
+const validate = require('@/middlewares/validate');
 
-// Tất cả routes đều cần token và role admin
-router.get('/', verifyToken, authorize('admin'), asyncHandler(userController.getAllUsers));
-router.get('/:id', verifyToken, authorize('admin'), asyncHandler(userController.getUserById));
-router.put('/:id', verifyToken, authorize('admin'), asyncHandler(userController.updateUser));
-router.delete('/:id', verifyToken, authorize('admin'), asyncHandler(userController.deleteUser));
-router.patch('/:id/role', verifyToken, authorize('admin'), asyncHandler(userController.updateUserRole));
+const {
+    updateUserSchema,
+    updateUserRoleSchema,
+    getUserByIdSchema,
+} = require('@/validations/auth.validation');
+
+// Tất cả routes đều cần: login + role admin
+router.use(verifyToken, authorize('admin'));
+
+router.get('/',
+    asyncHandler(UserController.getAllUsers)
+);
+
+router.get('/:id',
+    validate(getUserByIdSchema, 'params'),
+    asyncHandler(UserController.getUserById)
+);
+
+router.put('/:id',
+    validate(getUserByIdSchema, 'params'),
+    validate(updateUserSchema),
+    asyncHandler(UserController.updateUser)
+);
+
+router.delete('/:id',
+    validate(getUserByIdSchema, 'params'),
+    asyncHandler(UserController.deleteUser)
+);
+
+router.patch('/:id/role',
+    validate(getUserByIdSchema, 'params'),
+    validate(updateUserRoleSchema),
+    asyncHandler(UserController.updateUserRole)
+);
 
 module.exports = router;

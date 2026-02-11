@@ -40,7 +40,7 @@ passport.use(new GoogleStrategy({
                 googleId: googleId,
                 authType: 'google',
                 isVerified: true,
-                password: ''
+                password: null
             }
         });
 

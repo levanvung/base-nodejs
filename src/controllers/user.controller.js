@@ -1,104 +1,74 @@
-const prisma = require('@/dbs/init.prisma');
-const ErrorResponse = require('@/utils/error.response');
+const UserService = require('@/services/user.service');
+const { OkResponse } = require('@/responses');
 
-const getAllUsers = async (req, res) => {
-    const users = await prisma.user.findMany({
-        select: {
-            id: true,
-            email: true,
-            username: true, 
-            role: true,
-            status: true, 
-            createdAt: true
-        }
-    });
-    res.status(200).json({
-        success: true,
-        message: 'Lấy danh sách user thành công',
-        data: users
-    })
+class UserController {
+
+    /**
+     * GET /users?page=1&limit=20
+     */
+    static getAllUsers = async (req, res) => {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+
+        const result = await UserService.getAllUsers({ page, limit });
+
+        new OkResponse({
+            message: 'Lấy danh sách user thành công',
+            data: result.users,
+            metadata: result.pagination,
+        }).send(res);
+    };
+
+    /**
+     * GET /users/:id
+     */
+    static getUserById = async (req, res) => {
+        const user = await UserService.getUserById(parseInt(req.params.id));
+
+        new OkResponse({
+            message: 'Lấy thông tin user thành công',
+            data: user,
+        }).send(res);
+    };
+
+    /**
+     * PUT /users/:id
+     */
+    static updateUser = async (req, res) => {
+        const user = await UserService.updateUser(parseInt(req.params.id), req.body);
+
+        new OkResponse({
+            message: 'Cập nhật user thành công',
+            data: user,
+        }).send(res);
+    };
+
+    /**
+     * DELETE /users/:id  (soft delete)
+     */
+    static deleteUser = async (req, res) => {
+        await UserService.deleteUser(parseInt(req.params.id), req.user.id);
+
+        new OkResponse({
+            message: 'Vô hiệu hóa user thành công',
+        }).send(res);
+    };
+
+    /**
+     * PATCH /users/:id/role
+     */
+    static updateUserRole = async (req, res) => {
+        const user = await UserService.updateUserRole(
+            parseInt(req.params.id),
+            req.body.role,
+            req.user.id
+        );
+
+        new OkResponse({
+            message: 'Cập nhật role thành công',
+            data: user,
+        }).send(res);
+    };
 }
 
-
-
-const getUserById = async (req, res) => {
-    const user = await prisma.user.findUnique({
-        where: {id: parseInt(req.params.id)},
-        select: {
-            id: true,
-            email: true,
-            username: true,
-            role:true,
-            status: true,
-            isVerified: true,
-            createdAt: true,
-            updatedAt: true, 
-        }
-    });
-    if(!user) throw new ErrorResponse('Không tìm thấy user', 404);
-    res.status(200).json({
-        success: true,
-        message: 'Lấy thông tin user thành công',
-        data: user
-    })
-}
-
-const updateUser  = async (req, res) => {
-    const { username, email, status } = req.body;
-
-    const user = await prisma.user.update({
-        where: {id: parseInt(req.params.id)},
-        data: {username, email, status},
-        select: {
-            id: true,
-            email: true,
-            username: true,
-            role:true,
-            status: true,
-        }
-    });
-    res.status(200).json({
-        status: 'success',
-        data: {user}
-    })   ; 
-};
-
-const deleteUser = async (req, res) => {
-    await prisma.user.delete({
-        where: {id: parseInt(req.params.id)}
-    });
-    res.status(200).json({
-        status: 'success',
-        message: 'Xóa user thành công'
-    });
-};
-
-
-const updateUserRole = async (req, res) => {
-    const { role } = req.body;
-    if(!['user', 'admin', 'moderator'].includes(role)){
-        throw new ErrorResponse('Role không hợp lệ', 400);
-    }
-
-    const user = await prisma.user.update({
-        where: { id: parseInt(req.params.id)},
-        data: {role},
-        select: {
-            id:true,
-            email: true,
-            username: true,
-            role:true
-        }
-    });
-    res.status(200).json({
-        status: 'success',
-        data: {user}
-    })
-};
-module.exports = {
-    getAllUsers,
-    getUserById,
-    updateUser,
-    deleteUser,
-    updateUserRole 
-}
+module.exports = UserController;

@@ -1,20 +1,30 @@
+const logger = require('@/configs/config.logger');
+
+/**
+ * Global Error Handler Middleware
+ * Tất cả error đều đi qua đây
+ */
 const errorHandler = (err, req, res, next) => {
-
     const statusCode = err.status || 500;
+    const message = err.message || 'Internal Server Error';
 
-    const message = err.message  || 'Interal Server Error'
-
-    if(statusCode === 500) {
-        console.error('SERVER ERROR: ', err);
-
+    // Log server errors
+    if (statusCode >= 500) {
+        logger.error(`[${req.method}] ${req.originalUrl} - ${statusCode} - ${message}`, {
+            stack: err.stack,
+            body: req.body,
+            params: req.params,
+            ip: req.ip,
+        });
+    } else {
+        logger.warn(`[${req.method}] ${req.originalUrl} - ${statusCode} - ${message}`);
     }
 
     res.status(statusCode).json({
         status: 'error',
         code: statusCode,
-        message: message, 
-        // chỉ hiện stack trace khi ở môi trường dev để debug
-        stack: process.env.NODE_ENV === 'development' ?  err.stack : undefined
+        message,
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
     });
 };
 

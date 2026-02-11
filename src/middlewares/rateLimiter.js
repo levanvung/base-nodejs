@@ -1,33 +1,42 @@
 const redisClient = require('@/dbs/init.redis');
-const ErrorResponse = require('@/utils/error.response')
+const { TooManyRequestsError } = require('@/responses');
+const { RedisKey, RateLimit } = require('@/constants');
+
+/**
+ * Rate limiter cho OTP requests
+ * Giới hạn: tối đa 3 lần gửi OTP trong 5 phút theo email
+ */
 const rateLimiter = async (req, res, next) => {
-    const { email } = req.body;
+    try {
+        const { email } = req.body;
+        if (!email) return next();
 
-    const key  = `otp_limit:${email}`
+        const key = `${RedisKey.OTP_LIMIT}:${email}`;
+        const attempts = await redisClient.get(key);
 
-    await redisClient.get(key)
-    .then(async (value) => {
-         if(!value){
-          await redisClient.set(key, 1, 'EX', 300)
-            next();
-         } else if (value < 3) {
-            await redisClient.incr(key);
-            next();
-         } else {
-            await redisClient.ttl(key)
-            .then((ttl) => {
-                if(ttl < 0){
-                    redisClient.set(key, 1, 'EX', 300)
-                    next();
-                } else {
-                    next(new ErrorResponse(`Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau ${ttl} giây.`, 429))
-                }
-            })
-         }
-    })
-    .catch((err) => {
-        console.log(err)
-    })
-    
-}
-module.exports = {rateLimiter}
+        if (!attempts) {
+            await redisClient.set(key, 1, 'EX', RateLimit.OTP_WINDOW_SECONDS);
+            return next();
+        }
+
+        if (parseInt(attempts) >= RateLimit.OTP_MAX_ATTEMPTS) {
+            const ttl = await redisClient.ttl(key);
+            throw new TooManyRequestsError(
+                `Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau ${ttl} giây`
+            );
+        }
+
+        await redisClient.incr(key);
+        next();
+
+    } catch (error) {
+        if (error instanceof TooManyRequestsError) {
+            return next(error);
+        }
+        // Nếu Redis lỗi → cho request đi tiếp (graceful degradation)
+        console.error('Rate limiter error:', error);
+        next();
+    }
+};
+
+module.exports = { rateLimiter };

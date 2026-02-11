@@ -1,76 +1,41 @@
-const qrcode = require('qrcode')
-const { authenticator } = require('otplib');
-const prisma = require('@/dbs/init.prisma')
-const ErrorResponse = require('@/utils/error.response');
+const TfaService = require('@/services/tfa.service');
+const { OkResponse } = require('@/responses');
 
+class TfaController {
 
-// bật 2fa tạo secret & qr code
-const generate2FA = async (req, res) => {
-    const user = req.user;
+    /**
+     * POST /auth/2fa/generate
+     */
+    static generate2FA = async (req, res) => {
+        const data = await TfaService.generate2FA(req.user.id);
 
-    // taoj secret ngaaux nhien
+        new OkResponse({
+            message: 'Tạo 2FA thành công. Quét QR code bằng app xác thực',
+            data,
+        }).send(res);
+    };
 
-    const secret = authenticator.generateSecret();
+    /**
+     * POST /auth/2fa/verify
+     */
+    static verify2FA = async (req, res) => {
+        await TfaService.verify2FA(req.user.id, req.body.token);
 
-    await prisma.user.update({
-        where: {
-            id: user.id
-        },
-        data: {
-            twoFactorSecret: secret
-        }
-    })
+        new OkResponse({
+            message: 'Bật xác thực 2 bước thành công',
+        }).send(res);
+    };
 
-    // tao ma QR (otpauth: //...)
-    // const otpauth = authenticartor.keyuri(user.email, 'NodeJs app;)
-    const otpauth = authenticator.keyuri(user.email, 'NodeJS app', secret)
+    /**
+     * POST /auth/2fa/disable
+     */
+    static disable2FA = async (req, res) => {
+        await TfaService.disable2FA(req.user.id, req.body.token);
 
-    const imageUrl = await qrcode.toDataURL(otpauth);
-
-    return res.status(200).json({
-        status:'success',
-        data: {
-            qrcode: imageUrl,
-            secret: secret
-        }
-    })
-
-};
-
-const verify2FA = async (req, res) => {
-    const { token } = req.body;
-    const user = req.user;
-
-    // lay secret tu db
-
-    const userRecord = await prisma.user.findUnique({
-        where: {
-            id: user.id
-        }
-    });
-
-    // kiem tra ma
-    const isValid = authenticator.check(token, userRecord.twoFactorSecret);
-
-    if (!isValid) {
-        throw new ErrorResponse('Ma 2FA khong chinh xac', 400);
-    }
-    // neu dung -> bat chinh thuc tinh nang 2fa
-
-    await prisma.user.update({
-        where: {
-            id: user.id,
-        },
-        data: {
-            isTwoFactorEnabled: true
-        }
-    });
-    return res.status(200).json({
-        status: 'success',
-        message: 'Bat xac thuc 2 buoc thanh cong'
-    });
+        new OkResponse({
+            message: 'Tắt xác thực 2 bước thành công',
+        }).send(res);
+    };
 }
-module.exports = {
-    generate2FA,
-    verify2FA
-}
+
+module.exports = TfaController;
