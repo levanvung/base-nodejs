@@ -43,14 +43,16 @@ model Otp {
 }
 
 model KeyToken {
-  id Int @id @default(autoincrement())
-  userId Int @unique
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique
   refreshToken String
-  
-  user User @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("key_tokens")
 }
 
 

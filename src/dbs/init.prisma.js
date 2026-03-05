@@ -1,5 +1,9 @@
 const { PrismaClient } = require('@prisma/client');
+
 const prisma = new PrismaClient({
-    log: ['query', 'info', 'warn', 'error'], // Bật log để debug dễ hơn
+    log: process.env.NODE_ENV === 'development'
+        ? ['query', 'info', 'warn', 'error']
+        : ['error'],
 });
+
 module.exports = prisma;
