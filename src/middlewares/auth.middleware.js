@@ -37,11 +37,17 @@ const verifyToken = async (req, res, next) => {
                 role: true,
                 status: true,
                 isVerified: true,
+                tokenVersion: true,
             },
         });
 
         if (!user) {
             return next(new UnauthorizedError('User không tồn tại'));
+        }
+
+        // Kiểm tra tokenVersion: nếu user đã đổi pass -> tokenVersion bị tăng -> token cũ không khớp
+        if (decoded.tokenVersion !== undefined && user.tokenVersion !== decoded.tokenVersion) {
+            return next(new UnauthorizedError('Token đã bị vô hiệu hóa do đổi mật khẩu. Vui lòng đăng nhập lại'));
         }
 
         // 5. Check trạng thái tài khoản

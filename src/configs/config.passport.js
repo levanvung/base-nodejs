@@ -21,6 +21,12 @@ passport.use(new GoogleStrategy({
         });
 
         if (user) {
+            // NẾU USER ĐÃ ĐĂNG KÝ BẰNG EMAIL/PASS TRƯỚC ĐÓ -> CHẶN
+            if (user.authType === 'local') {
+                return done(new Error('Email này đã được đăng ký bằng Mật khẩu. Vui lòng đăng nhập bằng Mật khẩu.'), null);
+            }
+
+            // Nếu user đăng nhập bằng Google nhưng chưa có googleId (kịch bản hiếm do authType=google)
             if (!user.googleId) {
                 user = await prisma.user.update({
                     where: { id: user.id },

@@ -50,15 +50,18 @@ const RedisKey = {
     BLACKLIST: 'blacklist',
     LOGIN_FAIL: 'login_fail',
     OTP_LIMIT: 'otp_limit',
+    OTP_VERIFY_FAIL: 'otp_verify_fail',     // đếm số lần nhập sai OTP
     LOGIN_2FA_PENDING: 'login_2fa_pending', // tạm lưu userId chờ xác thực 2FA
 };
 
 // ==================== Rate Limit Config ====================
 const RateLimit = {
     OTP_MAX_ATTEMPTS: 3,
-    OTP_WINDOW_SECONDS: 300,        // 5 phút
+    OTP_WINDOW_SECONDS: 300,            // 5 phút
+    OTP_VERIFY_MAX_ATTEMPTS: 5,         // tối đa 5 lần nhập sai OTP
+    OTP_VERIFY_WINDOW_SECONDS: 600,     // trong 10 phút
     LOGIN_MAX_ATTEMPTS: 5,
-    LOGIN_WINDOW_SECONDS: 600,      // 10 phút
+    LOGIN_WINDOW_SECONDS: 600,          // 10 phút
 };
 
 module.exports = {

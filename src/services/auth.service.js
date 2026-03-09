@@ -10,7 +10,7 @@ const {
     UnauthorizedError,
     ConflictError,
 } = require('@/responses');
-const { OtpType, OtpConfig, RedisKey, UserStatus } = require('@/constants');
+const { OtpType, OtpConfig, RedisKey, UserStatus, RateLimit } = require('@/constants');
 
 class AuthService {
 
@@ -272,7 +272,11 @@ class AuthService {
             throw new UnauthorizedError('User không tồn tại');
         }
 
-        const newTokens = generateTokens({ id: user.id, role: user.role });
+        const newTokens = generateTokens({
+            id: user.id,
+            role: user.role,
+            tokenVersion: user.tokenVersion // Truyền tokenVersion vào token mới
+        });
 
         await prisma.keyToken.update({
             where: { userId: decoded.id },
@@ -345,8 +349,17 @@ class AuthService {
         });
 
         if (!otpRecord) {
+            // Tăng counter OTP fail trong Redis
+            // Khi counter vượt ngưỡng → otpVerifyLimiter middleware sẽ chặn
+            const key = `${RedisKey.OTP_VERIFY_FAIL}:${email}`;
+            await redisClient.incr(key);
+            await redisClient.expire(key, RateLimit.OTP_VERIFY_WINDOW_SECONDS);
+
             throw new BadRequestError('OTP không chính xác hoặc đã hết hạn');
         }
+
+        // OTP đúng → xóa counter fail
+        await redisClient.del(`${RedisKey.OTP_VERIFY_FAIL}:${email}`);
 
         return otpRecord;
     }
@@ -355,7 +368,11 @@ class AuthService {
      * Tạo và lưu tokens (access + refresh)
      */
     static async _issueTokens(user) {
-        const tokens = generateTokens({ id: user.id, role: user.role });
+        const tokens = generateTokens({
+            id: user.id,
+            role: user.role,
+            tokenVersion: user.tokenVersion // Đưa tokenVersion vào JWT payload
+        });
 
         // Lưu refresh token vào DB
         await prisma.keyToken.upsert({
@@ -405,8 +422,11 @@ class AuthService {
         // Xóa refresh token
         await prisma.keyToken.deleteMany({ where: { userId } });
 
-        // Note: Access token vẫn valid cho đến khi hết hạn
-        // Trong production nên dùng thêm cơ chế token version hoặc iat check
+        // Tăng tokenVersion để vô hiệu hóa ngay lập tức tất cả access token cũ
+        await prisma.user.update({
+            where: { id: userId },
+            data: { tokenVersion: { increment: 1 } },
+        });
     }
 }
 

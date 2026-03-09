@@ -23,6 +23,7 @@ model User {
   
   twoFactorSecret String? @map("two_factor_secret") // mã OTP bí mật (Base32)
   isTwoFactorEnabled Boolean @default(false) @map("is_two_factor_enabled")
+  tokenVersion Int @default(0) @map("token_version") // dùng để thu hồi toàn bộ access token cũ khi đổi pass
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   keyToken KeyToken?

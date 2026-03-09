@@ -8,6 +8,7 @@ const asyncHandler = require('@/middlewares/asyncHandler');
 const { verifyToken } = require('@/middlewares/auth.middleware');
 const { rateLimiter } = require('@/middlewares/rateLimiter');
 const { loginLimiter } = require('@/middlewares/loginLimiter');
+const { otpVerifyLimiter } = require('@/middlewares/otpVerifyLimiter');
 const validate = require('@/middlewares/validate');
 const AuthService = require('@/services/auth.service');
 const { OkResponse } = require('@/responses');
@@ -94,6 +95,7 @@ router.post('/register/send-otp',
  *         description: OTP sai hoặc hết hạn
  */
 router.post('/register/verify-otp',
+    otpVerifyLimiter,
     validate(registerVerifyOtpSchema),
     asyncHandler(AuthController.registerVerifyOTP)
 );
@@ -372,6 +374,7 @@ router.post('/forgot-password/send-otp',
  *         description: OTP sai hoặc hết hạn
  */
 router.post('/forgot-password/reset-password',
+    otpVerifyLimiter,
     validate(resetPasswordSchema),
     asyncHandler(AuthController.resetPassword)
 );
