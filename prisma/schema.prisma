@@ -27,6 +27,7 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   keyToken KeyToken?
+  @@index([twoFactorSecret])
   @@map("users") // Map với tên bảng 'users' trong DB
 }
 // Định nghĩa model OTP (thay thế otp table)

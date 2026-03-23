@@ -16,8 +16,24 @@ const { connectRabbitMQ } = require('@/dbs/init.rabbitmq');
 
 const app = express();
 
+// ==================== Trust Proxy ====================
+// Nginx / Load Balancer ip forward
+app.set('trust proxy', 1);
+
 // ==================== Security Middlewares ====================
-app.use(helmet());
+app.use(helmet({
+    strictTransportSecurity: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    }
+}));
+// Request ID middleware
+app.use((req, res, next) => {
+    req.id = require('crypto').randomUUID();
+    res.setHeader('X-Request-ID', req.id);
+    next();
+});
 
 // ==================== CORS ====================
 app.use((req, res, next) => {
@@ -69,7 +85,10 @@ connectRabbitMQ();
 
 // ==================== Routes ====================
 app.use('/api', routes);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+if (process.env.NODE_ENV !== 'production') {
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
 
 // ==================== Health Check ====================
 app.get('/', (req, res) => {
@@ -88,10 +107,41 @@ app.use(errorHandler);
 
 // ==================== Start Server ====================
 const PORT = config.app.port;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     logger.info(`Server running at http://${config.app.host}:${PORT}`);
     logger.info(`API Docs: http://${config.app.host}:${PORT}/api-docs`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+// ==================== Graceful Shutdown ====================
+const gracefulShutdown = () => {
+    logger.info('Received kill signal, shutting down gracefully');
+    server.close(async () => {
+        logger.info('Closed out remaining connections');
+        
+        // Đóng các kết nối database/queue
+        try {
+            const prisma = require('@/dbs/init.prisma');
+            await prisma.$disconnect();
+            
+            const redisClient = require('@/dbs/init.redis');
+            redisClient.disconnect();
+            
+            logger.info('Disconnected from databases');
+        } catch (err) {
+            logger.error('Error closing database connections', { error: err });
+        }
+        
+        process.exit(0);
+    });
+
+    setTimeout(() => {
+        logger.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 module.exports = app;

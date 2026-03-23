@@ -15,7 +15,7 @@ const connectRabbitMQ = async () => {
     }
 };
 
-connectRabbitMQ();
+// Hàm kết nối đã được export để gọi ở server.js
 const getChannel = () => channel
 
 module.exports = { connectRabbitMQ, getChannel }

@@ -19,7 +19,22 @@ const startEmailWorker = async () => {
 
             }catch (error) {
                 console.error('Email send failed:', error);
-                channel.nack(msg, false, true) // trey lại job này
+                
+                // Giới hạn số lần retry để tránh spam loop
+                const headers = msg.properties.headers || {};
+                const retryCount = (headers['x-retry-count'] || 0) + 1;
+                
+                if (retryCount >= 3) {
+                    console.error(`Email to ${emailData.to} failed 3 times. Dropping message.`);
+                    channel.ack(msg); // Drop hoàn toàn
+                } else {
+                    console.log(`Re-queue email to ${emailData.to} (attempt ${retryCount})`);
+                    // Publish lại với header x-retry-count tăng lên
+                    channel.publish('', 'email_queue', Buffer.from(JSON.stringify(emailData)), {
+                        headers: { 'x-retry-count': retryCount }
+                    });
+                    channel.ack(msg); // Ack message cũ
+                }
             }
         }
     })

@@ -10,9 +10,16 @@ const errorHandler = (err, req, res, next) => {
 
     // Log server errors
     if (statusCode >= 500) {
+        // Sanitize sensitive data from body before logging
+        const sanitizedBody = { ...req.body };
+        ['password', 'oldPassword', 'newPassword', 'otp', 'token', 'refreshToken'].forEach(field => {
+            if (sanitizedBody[field]) sanitizedBody[field] = '[FILTERED]';
+        });
+
         logger.error(`[${req.method}] ${req.originalUrl} - ${statusCode} - ${message}`, {
+            requestId: req.id,
             stack: err.stack,
-            body: req.body,
+            body: sanitizedBody,
             params: req.params,
             ip: req.ip,
         });
