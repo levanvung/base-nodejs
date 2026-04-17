@@ -3,7 +3,7 @@ FROM node:20-alpine AS base
 FROM base AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 FROM base AS builder
 WORKDIR /app
@@ -29,6 +29,9 @@ COPY --from=builder /app/.env.example ./
 COPY --from=builder /app/jsconfig.json ./
 COPY --from=builder /app/knexfile.js ./
 COPY --from=builder /app/prisma.config.ts ./
+COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
+
+RUN chmod +x ./entrypoint.sh
 
 USER nodejs
 

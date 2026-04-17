@@ -1,13 +1,12 @@
-version: '3.8'
-
 services:
-   app:
-     build:
-       context: .
-       dockerfile: Dockerfile
-     container_name: nodejs-app
-     restart: unless-stopped
-     entrypoint: ["./entrypoint.sh"]
+  app:
+    image: ${IMAGE_NAME:-ghcr.io/your-org/nodejs-3.0}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nodejs-app
+    restart: unless-stopped
+    entrypoint: ["./entrypoint.sh"]
     ports:
       - "3008:3008"
     env_file:
@@ -34,6 +33,7 @@ services:
       start_period: 40s
 
   worker:
+    image: ${IMAGE_NAME:-ghcr.io/your-org/nodejs-3.0}:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
