@@ -24,6 +24,7 @@ const UserStatus = {
     ACTIVE: 'active',
     INACTIVE: 'inactive',
     BANNED: 'banned',
+    LOCKED: 'locked',
 };
 
 // ==================== Auth Type ====================

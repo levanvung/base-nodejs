@@ -122,6 +122,8 @@ class AuthController {
         await AuthService.logout({
             userId: req.user.id,
             accessToken,
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
         });
 
         new OkResponse({

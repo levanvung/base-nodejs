@@ -9,6 +9,7 @@ const { verifyToken } = require('@/middlewares/auth.middleware');
 const { rateLimiter } = require('@/middlewares/rateLimiter');
 const { loginLimiter } = require('@/middlewares/loginLimiter');
 const { otpVerifyLimiter } = require('@/middlewares/otpVerifyLimiter');
+const { refreshTokenLimiter } = require('@/middlewares/refreshTokenLimiter');
 const validate = require('@/middlewares/validate');
 const AuthService = require('@/services/auth.service');
 const { OkResponse } = require('@/responses');
@@ -188,6 +189,7 @@ router.post('/login/2fa',
  *         description: Redirect đến trang đăng nhập Google
  */
 router.get('/google',
+    rateLimiter,
     passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
@@ -239,6 +241,7 @@ router.get('/google/callback',
  *         description: Refresh token không hợp lệ hoặc hết hạn
  */
 router.post('/refresh-token',
+    refreshTokenLimiter,
     validate(refreshTokenSchema),
     asyncHandler(AuthController.refreshToken)
 );

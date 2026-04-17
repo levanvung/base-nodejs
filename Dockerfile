@@ -1,0 +1,37 @@
+FROM node:20-alpine AS base
+
+FROM base AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+FROM base AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npx prisma generate
+RUN npm run build || true
+
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/.env.example ./
+COPY --from=builder /app/jsconfig.json ./
+COPY --from=builder /app/knexfile.js ./
+COPY --from=builder /app/prisma.config.ts ./
+
+USER nodejs
+
+EXPOSE 3008
+
+CMD ["node", "src/server.js"]

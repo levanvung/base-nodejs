@@ -57,6 +57,9 @@ const verifyToken = async (req, res, next) => {
         if (user.status === 'inactive') {
             return next(new UnauthorizedError('Tài khoản đã bị vô hiệu hóa'));
         }
+        if (user.status === 'locked') {
+            return next(new UnauthorizedError('Tài khoản đã bị tạm khóa. Vui lòng thử lại sau'));
+        }
 
         // 6. Gán user vào request
         req.user = user;

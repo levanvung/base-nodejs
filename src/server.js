@@ -6,6 +6,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const passport = require('passport');
 const swaggerUi = require('swagger-ui-express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
 const swaggerSpec = require('@/configs/config.swagger');
 const config = require('@/configs/config.postgres');
@@ -13,6 +15,7 @@ const logger = require('@/configs/config.logger');
 const routes = require('@/routes');
 const errorHandler = require('@/middlewares/errorHandler');
 const { connectRabbitMQ } = require('@/dbs/init.rabbitmq');
+const { csrfProtection, csrfErrorHandler } = require('@/middlewares/csrf');
 
 const app = express();
 
@@ -26,7 +29,17 @@ app.use(helmet({
         maxAge: 31536000,
         includeSubDomains: true,
         preload: true
-    }
+    },
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https:"],
+        },
+    },
+    xContentTypeOptions: true,
+    xFrameOptions: 'DENY',
 }));
 // Request ID middleware
 app.use((req, res, next) => {
@@ -36,24 +49,27 @@ app.use((req, res, next) => {
 });
 
 // ==================== CORS ====================
-app.use((req, res, next) => {
-    const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000').split(',');
-    const origin = req.headers.origin;
+const corsOptions = {
+    origin: (origin, callback) => {
+        const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000').split(',');
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+};
+app.use(cors(corsOptions));
 
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    }
+// ==================== Cookie Parser ====================
+app.use(cookieParser());
 
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-
-    next();
-});
+// ==================== CSRF Protection ====================
+const { csrfMiddleware } = require('@/middlewares/csrf');
+app.use(csrfMiddleware);
 
 // ==================== Body Parsers ====================
 app.use(express.json({ limit: '10mb' }));

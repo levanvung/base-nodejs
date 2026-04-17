@@ -5,6 +5,7 @@ const redisClient = require('@/dbs/init.redis');
 const { generateTokens } = require('@/helpers/jwt.helper');
 const generateOTP = require('@/helpers/generateOTP');
 const { sendEmailToQueue } = require('@/services/queue.service');
+const { auditLog, AuditAction } = require('@/services/audit.service');
 const {
     BadRequestError,
     UnauthorizedError,
@@ -117,14 +118,28 @@ class AuthService {
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            // Tăng counter login fail
             const key = `${RedisKey.LOGIN_FAIL}:${ip}`;
-            await redisClient.incr(key);
+            const attempts = await redisClient.incr(key);
             await redisClient.expire(key, 600);
+
+            if (attempts >= RateLimit.LOGIN_MAX_ATTEMPTS) {
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: { status: UserStatus.LOCKED },
+                });
+                throw new BadRequestError('Tài khoản đã bị tạm khóa do đăng nhập sai quá nhiều lần');
+            }
+
             throw new BadRequestError('Email hoặc mật khẩu không chính xác');
         }
 
-        // Xóa counter login fail
+        // Xóa counter login fail và unlock nếu đang bị khóa
+        if (user.status === UserStatus.LOCKED) {
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { status: UserStatus.ACTIVE },
+            });
+        }
         await redisClient.del(`${RedisKey.LOGIN_FAIL}:${ip}`);
 
         // Nếu user bật 2FA → trả tempToken, chờ verify 2FA
@@ -133,7 +148,16 @@ class AuthService {
         }
 
         // Login bình thường → trả tokens
-        return this._issueTokens(user);
+        const tokens = await this._issueTokens(user);
+        
+        await auditLog({
+            userId: user.id,
+            action: AuditAction.LOGIN,
+            ip,
+            details: { method: 'password' },
+        });
+
+        return tokens;
     }
 
     /**
@@ -266,29 +290,45 @@ class AuthService {
             throw new UnauthorizedError('Refresh Token không hợp lệ hoặc đã bị thu hồi');
         }
 
-        // Tạo token mới
         const user = await prisma.user.findUnique({ where: { id: decoded.id } });
         if (!user) {
             throw new UnauthorizedError('User không tồn tại');
         }
 
+        if (user.status === UserStatus.LOCKED) {
+            throw new UnauthorizedError('Tài khoản đã bị tạm khóa');
+        }
+
         const newTokens = generateTokens({
             id: user.id,
             role: user.role,
-            tokenVersion: user.tokenVersion // Truyền tokenVersion vào token mới
+            tokenVersion: user.tokenVersion
         });
 
+        // Token rotation: tạo token mới và thu hồi token cũ (invalidate token cũ)
         await prisma.keyToken.update({
             where: { userId: decoded.id },
             data: { refreshToken: newTokens.refreshToken },
         });
 
-        return newTokens;
+        // Blacklist token cũ
+        const oldDecoded = jwt.decode(refreshToken);
+        if (oldDecoded && oldDecoded.exp) {
+            const ttl = oldDecoded.exp - Math.floor(Date.now() / 1000);
+            if (ttl > 0) {
+                await redisClient.set(`${RedisKey.BLACKLIST}:${refreshToken}`, '1', 'EX', ttl);
+            }
+        }
+
+        return {
+            ...newTokens,
+            rotated: true,
+        };
     }
 
     // ==================== LOGOUT ====================
 
-    static async logout({ userId, accessToken }) {
+    static async logout({ userId, accessToken, ip, userAgent }) {
         // Xóa refresh token khỏi DB
         await prisma.keyToken.deleteMany({
             where: { userId },
@@ -306,6 +346,13 @@ class AuthService {
         } catch {
             // Token decode fail thì bỏ qua, đã xóa refresh token rồi
         }
+
+        await auditLog({
+            userId,
+            action: AuditAction.LOGOUT,
+            ip,
+            userAgent,
+        });
     }
 
     // ==================== GET ME ====================
@@ -338,6 +385,17 @@ class AuthService {
      * Verify OTP — dùng chung cho register, forgot password
      */
     static async _verifyOTP(email, otpCode, otpType) {
+        // Check số lần nhập sai OTP
+        const verifyFailKey = `${RedisKey.OTP_VERIFY_FAIL}:${email}`;
+        const failAttempts = await redisClient.get(verifyFailKey);
+        
+        if (failAttempts && parseInt(failAttempts) >= RateLimit.OTP_VERIFY_MAX_ATTEMPTS) {
+            const ttl = await redisClient.ttl(verifyFailKey);
+            throw new BadRequestError(
+                `Bạn đã nhập sai OTP quá nhiều lần. Vui lòng thử lại sau ${Math.ceil(ttl / 60)} phút`
+            );
+        }
+
         const otpRecord = await prisma.otp.findFirst({
             where: {
                 email,
@@ -349,8 +407,6 @@ class AuthService {
         });
 
         if (!otpRecord) {
-            // Tăng counter OTP fail trong Redis
-            // Khi counter vượt ngưỡng → otpVerifyLimiter middleware sẽ chặn
             const key = `${RedisKey.OTP_VERIFY_FAIL}:${email}`;
             await redisClient.incr(key);
             await redisClient.expire(key, RateLimit.OTP_VERIFY_WINDOW_SECONDS);
@@ -358,8 +414,7 @@ class AuthService {
             throw new BadRequestError('OTP không chính xác hoặc đã hết hạn');
         }
 
-        // OTP đúng → xóa counter fail
-        await redisClient.del(`${RedisKey.OTP_VERIFY_FAIL}:${email}`);
+        await redisClient.del(verifyFailKey);
 
         return otpRecord;
     }

@@ -57,4 +57,18 @@ model KeyToken {
   @@map("key_tokens")
 }
 
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String
+  ip        String?
+  userAgent String?  @map("user_agent")
+  details   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
 
