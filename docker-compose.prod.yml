@@ -1,0 +1,56 @@
+services:
+  app:
+    restart: always
+    mem_limit: 512m
+    cpus: 0.50
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  worker:
+    restart: always
+    mem_limit: 384m
+    cpus: 0.35
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    restart: always
+    mem_limit: 1024m
+    cpus: 0.75
+    command: ["postgres", "-c", "shared_buffers=256MB", "-c", "max_connections=120"]
+    ports: []
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  redis:
+    restart: always
+    mem_limit: 256m
+    cpus: 0.25
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "redis"]
+    ports: []
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  rabbitmq:
+    image: rabbitmq:3-alpine
+    restart: always
+    mem_limit: 512m
+    cpus: 0.40
+    ports: []
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"

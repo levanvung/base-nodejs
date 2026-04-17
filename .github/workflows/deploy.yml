@@ -107,15 +107,20 @@ jobs:
             set -eu
             cd "${{ secrets.DEPLOY_PATH }}"
 
+            if [ -d .git ]; then
+              git pull --ff-only origin "${{ github.ref_name }}"
+            fi
+
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
             export IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
             export IMAGE_TAG="${{ github.sha }}"
+            COMPOSE_ARGS="-f docker-compose.yml -f docker-compose.prod.yml"
 
-            docker compose pull app worker
-            docker compose up -d --remove-orphans
+            docker compose $COMPOSE_ARGS pull app worker
+            docker compose $COMPOSE_ARGS up -d --remove-orphans
 
-            docker compose ps
+            docker compose $COMPOSE_ARGS ps
             wget -qO- http://localhost:3008/ >/dev/null
 
   monitor:
