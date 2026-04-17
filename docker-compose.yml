@@ -1,12 +1,13 @@
 version: '3.8'
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: nodejs-app
-    restart: unless-stopped
+   app:
+     build:
+       context: .
+       dockerfile: Dockerfile
+     container_name: nodejs-app
+     restart: unless-stopped
+     entrypoint: ["./entrypoint.sh"]
     ports:
       - "3008:3008"
     env_file:
