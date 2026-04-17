@@ -3,9 +3,18 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "jest --detectOpenHandles --forceExit",
+    "test": "cross-env NODE_ENV=test jest --detectOpenHandles --forceExit",
     "dev": "nodemon src/server.js",
     "worker": "node src/workers/email.worker.js"
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/.kilo/"
+    ]
   },
   "keywords": [],
   "author": "",
@@ -39,8 +48,11 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
+    "jest": "^30.3.0",
     "nodemon": "^3.1.11",
-    "prisma": "^5.22.0"
+    "prisma": "^5.22.0",
+    "supertest": "^7.2.2"
   },
   "_moduleAliases": {
     "@": "src"

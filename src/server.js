@@ -9,13 +9,10 @@ const swaggerUi = require('swagger-ui-express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
-const swaggerSpec = require('@/configs/config.swagger');
 const config = require('@/configs/config.postgres');
 const logger = require('@/configs/config.logger');
-const routes = require('@/routes');
 const errorHandler = require('@/middlewares/errorHandler');
 const { connectRabbitMQ } = require('@/dbs/init.rabbitmq');
-const { csrfProtection, csrfErrorHandler } = require('@/middlewares/csrf');
 
 const app = express();
 
@@ -96,13 +93,19 @@ app.use(morgan(morganFormat, {
 app.use(passport.initialize());
 
 // ==================== Database Connections ====================
-require('@/dbs/init.postgres');
-connectRabbitMQ();
+if (process.env.NODE_ENV !== 'test') {
+    require('@/dbs/init.postgres');
+    connectRabbitMQ();
+}
 
 // ==================== Routes ====================
-app.use('/api', routes);
+if (process.env.NODE_ENV !== 'test') {
+    const routes = require('@/routes');
+    app.use('/api', routes);
+}
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+    const swaggerSpec = require('@/configs/config.swagger');
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 }
 
