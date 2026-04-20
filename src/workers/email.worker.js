@@ -1,15 +1,15 @@
 require('module-alias/register');
-const { connectRabbitMQ, getChannel }= require('@/dbs/init.rabbitmq');
+const { connectRabbitMQ, waitForChannel } = require('@/dbs/init.rabbitmq');
 const { sendMail } = require('@/services/email.service');
 
 const startEmailWorker = async () => {
     await connectRabbitMQ();
-    const channel = getChannel();
+    const channel = await waitForChannel(45000);
 
-    console.log('Email worker stated, wating for job ...')
+    console.log('Email worker started, waiting for jobs...');
 
-    channel.consume('email_queue', async(msg) => {
-        if(msg) {
+    channel.consume('email_queue', async (msg) => {
+        if (msg) {
             const emailData = JSON.parse(msg.content.toString());
 
             try {
@@ -17,7 +17,7 @@ const startEmailWorker = async () => {
                 console.log('EmailSend:', emailData.to);
                 channel.ack(msg); //xác nhận xử lý xong
 
-            }catch (error) {
+            } catch (error) {
                 console.error('Email send failed:', error);
                 
                 // Giới hạn số lần retry để tránh spam loop
@@ -37,6 +37,10 @@ const startEmailWorker = async () => {
                 }
             }
         }
-    })
+    });
 };
-startEmailWorker();
+
+startEmailWorker().catch((error) => {
+    console.error('Email worker failed to start:', error);
+    process.exit(1);
+});
