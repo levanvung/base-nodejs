@@ -123,7 +123,12 @@ jobs:
             COMPOSE_ARGS="-f docker-compose.yml -f docker-compose.prod.yml"
 
             docker compose $COMPOSE_ARGS pull app worker
-            docker compose $COMPOSE_ARGS up -d --remove-orphans --wait --wait-timeout 300
+            if ! docker compose $COMPOSE_ARGS up -d --remove-orphans --wait --wait-timeout 300; then
+              echo "Compose failed, printing service status and logs..."
+              docker compose $COMPOSE_ARGS ps || true
+              docker compose $COMPOSE_ARGS logs --tail=200 app worker redis postgres rabbitmq || true
+              exit 1
+            fi
 
             docker compose $COMPOSE_ARGS ps
 
