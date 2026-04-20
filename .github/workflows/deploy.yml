@@ -126,6 +126,10 @@ jobs:
             if ! docker compose $COMPOSE_ARGS up -d --remove-orphans --wait --wait-timeout 300; then
               echo "Compose failed, printing service status and logs..."
               docker compose $COMPOSE_ARGS ps || true
+              docker inspect nodejs-app --format '{{json .State.Health}}' || true
+              docker inspect nodejs-worker --format '{{json .State.Health}}' || true
+              docker logs --tail=200 nodejs-app || true
+              docker logs --tail=200 nodejs-worker || true
               docker compose $COMPOSE_ARGS logs --tail=200 app worker redis postgres rabbitmq || true
               exit 1
             fi

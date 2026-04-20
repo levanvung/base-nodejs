@@ -30,10 +30,10 @@ services:
       - app-network
     healthcheck:
       test: ["CMD-SHELL", "node -e \"const p=process.env.PORT||3008; require('http').get('http://127.0.0.1:'+p+'/',res=>process.exit(res.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 10
+      start_period: 120s
 
   worker:
     image: ${IMAGE_NAME:-ghcr.io/your-org/nodejs-3.0}:${IMAGE_TAG:-latest}
