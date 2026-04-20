@@ -118,10 +118,9 @@ jobs:
             COMPOSE_ARGS="-f docker-compose.yml -f docker-compose.prod.yml"
 
             docker compose $COMPOSE_ARGS pull app worker
-            docker compose $COMPOSE_ARGS up -d --remove-orphans
+            docker compose $COMPOSE_ARGS up -d --remove-orphans --wait --wait-timeout 300
 
             docker compose $COMPOSE_ARGS ps
-            wget -qO- http://localhost:3008/ >/dev/null
 
   monitor:
     name: Monitor (post-deploy)
