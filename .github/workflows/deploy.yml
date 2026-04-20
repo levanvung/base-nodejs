@@ -97,18 +97,19 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         with:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           port: ${{ secrets.DO_PORT }}
+          envs: REGISTRY,IMAGE_NAME,IMAGE_TAG,GHCR_USERNAME,GHCR_TOKEN
           script_stop: true
-                   env:
-                     REGISTRY: ${{ env.REGISTRY }}
-                     IMAGE_NAME: ${{ env.IMAGE_NAME }}
-                     IMAGE_TAG: ${{ github.sha }}
-                     GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-                     GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           script: |
             set -eu
             cd "${{ secrets.DEPLOY_PATH }}"
@@ -117,14 +118,14 @@ jobs:
               git pull --ff-only origin "${{ github.ref_name }}"
             fi
 
-             echo "$GHCR_TOKEN" | docker login "$REGISTRY" -u "$GHCR_USERNAME" --password-stdin
+            echo "$GHCR_TOKEN" | docker login "$REGISTRY" -u "$GHCR_USERNAME" --password-stdin
 
             COMPOSE_ARGS="-f docker-compose.yml -f docker-compose.prod.yml"
 
-             export FULL_IMAGE_NAME="$REGISTRY/$IMAGE_NAME"
-             export IMAGE_TAG="$IMAGE_TAG"
+            export FULL_IMAGE_NAME="$REGISTRY/$IMAGE_NAME"
+            export IMAGE_TAG="$IMAGE_TAG"
 
-             docker compose $COMPOSE_ARGS pull app worker
+            docker compose $COMPOSE_ARGS pull app worker
             docker compose $COMPOSE_ARGS up -d --remove-orphans --wait --wait-timeout 300
 
             docker compose $COMPOSE_ARGS ps
