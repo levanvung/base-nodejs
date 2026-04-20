@@ -37,6 +37,8 @@ services:
     cpus: 0.25
     command: ["redis-server", "--appendonly", "yes", "--requirepass", "redis"]
     ports: []
+    healthcheck:
+      start_period: 60s
     logging:
       driver: json-file
       options:
