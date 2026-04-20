@@ -109,7 +109,7 @@ jobs:
           key: ${{ secrets.DO_SSH_KEY }}
           port: ${{ secrets.DO_PORT }}
           envs: REGISTRY,IMAGE_NAME,IMAGE_TAG,GHCR_USERNAME,GHCR_TOKEN
-          script_stop: true
+          script_stop: false
           script: |
             set -u
             echo "[STEP] cd deploy path"
@@ -140,7 +140,11 @@ jobs:
             fi
 
             echo "[STEP] docker compose up -d"
-            if ! docker compose $COMPOSE_ARGS up -d --remove-orphans; then
+            UP_OUTPUT=$(docker compose $COMPOSE_ARGS up -d --remove-orphans 2>&1)
+            UP_EXIT=$?
+            echo "$UP_OUTPUT"
+            if [ "$UP_EXIT" -ne 0 ]; then
+              echo "docker compose up failed with exit code $UP_EXIT. Printing diagnostics..."
               echo "docker compose up failed. Printing diagnostics..."
               docker compose $COMPOSE_ARGS ps || true
               docker inspect nodejs-app --format '{{json .State}}' || true
@@ -148,7 +152,7 @@ jobs:
               docker logs --tail=300 nodejs-app || true
               docker logs --tail=300 nodejs-worker || true
               docker compose $COMPOSE_ARGS logs --tail=200 redis postgres rabbitmq || true
-              exit 1
+              exit "$UP_EXIT"
             fi
 
             # Wait only for app container health to avoid false negatives from other service probes.
