@@ -70,7 +70,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha
+            type=raw,value=${{ github.sha }}
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
@@ -99,7 +99,7 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         env:
           REGISTRY: ${{ env.REGISTRY }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          IMAGE_NAME: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           IMAGE_TAG: ${{ github.sha }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
@@ -121,9 +121,6 @@ jobs:
             echo "$GHCR_TOKEN" | docker login "$REGISTRY" -u "$GHCR_USERNAME" --password-stdin
 
             COMPOSE_ARGS="-f docker-compose.yml -f docker-compose.prod.yml"
-
-            export FULL_IMAGE_NAME="$REGISTRY/$IMAGE_NAME"
-            export IMAGE_TAG="$IMAGE_TAG"
 
             docker compose $COMPOSE_ARGS pull app worker
             docker compose $COMPOSE_ARGS up -d --remove-orphans --wait --wait-timeout 300
