@@ -108,6 +108,7 @@ jobs:
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
           port: ${{ secrets.DO_PORT }}
+          command_timeout: 30m
           envs: REGISTRY,IMAGE_NAME,IMAGE_TAG,GHCR_USERNAME,GHCR_TOKEN
           script_stop: false
           script: |
@@ -145,13 +146,18 @@ jobs:
             echo "$UP_OUTPUT"
             if [ "$UP_EXIT" -ne 0 ]; then
               echo "docker compose up failed with exit code $UP_EXIT. Printing diagnostics..."
-              echo "docker compose up failed. Printing diagnostics..."
+              echo "===== docker compose ps ====="
               docker compose $COMPOSE_ARGS ps || true
+              echo "===== nodejs-app state ====="
               docker inspect nodejs-app --format '{{json .State}}' || true
+              echo "===== nodejs-worker state ====="
               docker inspect nodejs-worker --format '{{json .State}}' || true
+              echo "===== nodejs-app logs ====="
               docker logs --tail=300 nodejs-app || true
+              echo "===== nodejs-worker logs ====="
               docker logs --tail=300 nodejs-worker || true
-              docker compose $COMPOSE_ARGS logs --tail=200 redis postgres rabbitmq || true
+              echo "===== infra logs (redis/postgres/rabbitmq) ====="
+              docker compose $COMPOSE_ARGS logs --tail=120 redis postgres rabbitmq || true
               exit "$UP_EXIT"
             fi
 
@@ -168,11 +174,16 @@ jobs:
 
               if [ "$STATUS" = "unhealthy" ] || [ "$STATUS" = "exited" ] || [ "$STATUS" = "missing" ]; then
                 echo "App failed to become healthy. Printing diagnostics..."
+                echo "===== docker compose ps ====="
                 docker compose $COMPOSE_ARGS ps || true
+                echo "===== nodejs-app state ====="
                 docker inspect nodejs-app --format '{{json .State}}' || true
+                echo "===== nodejs-app logs ====="
                 docker logs --tail=300 nodejs-app || true
+                echo "===== nodejs-worker logs ====="
                 docker logs --tail=300 nodejs-worker || true
-                docker compose $COMPOSE_ARGS logs --tail=200 redis postgres rabbitmq || true
+                echo "===== infra logs (redis/postgres/rabbitmq) ====="
+                docker compose $COMPOSE_ARGS logs --tail=120 redis postgres rabbitmq || true
                 exit 1
               fi
 
@@ -182,9 +193,14 @@ jobs:
 
             if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
               echo "Timed out waiting for nodejs-app health. Printing diagnostics..."
+              echo "===== docker compose ps ====="
               docker compose $COMPOSE_ARGS ps || true
+              echo "===== nodejs-app state ====="
               docker inspect nodejs-app --format '{{json .State}}' || true
+              echo "===== nodejs-app logs ====="
               docker logs --tail=300 nodejs-app || true
+              echo "===== nodejs-worker logs ====="
+              docker logs --tail=300 nodejs-worker || true
               exit 1
             fi
 
