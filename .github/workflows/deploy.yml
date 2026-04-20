@@ -111,18 +111,35 @@ jobs:
           envs: REGISTRY,IMAGE_NAME,IMAGE_TAG,GHCR_USERNAME,GHCR_TOKEN
           script_stop: true
           script: |
-            set -eu
+            set -u
+            echo "[STEP] cd deploy path"
             cd "${{ secrets.DEPLOY_PATH }}"
 
             if [ -d .git ]; then
+              echo "[STEP] git pull"
               git pull --ff-only origin "${{ github.ref_name }}"
             fi
 
+            echo "[STEP] docker login ghcr"
             echo "$GHCR_TOKEN" | docker login "$REGISTRY" -u "$GHCR_USERNAME" --password-stdin
+            LOGIN_EXIT=$?
+            if [ "$LOGIN_EXIT" -ne 0 ]; then
+              echo "docker login failed with exit code $LOGIN_EXIT"
+              exit "$LOGIN_EXIT"
+            fi
 
             COMPOSE_ARGS="-f docker-compose.yml -f docker-compose.prod.yml"
 
+            echo "[STEP] docker compose pull app worker"
             docker compose $COMPOSE_ARGS pull app worker
+            PULL_EXIT=$?
+            if [ "$PULL_EXIT" -ne 0 ]; then
+              echo "docker compose pull failed with exit code $PULL_EXIT"
+              docker compose $COMPOSE_ARGS ps || true
+              exit "$PULL_EXIT"
+            fi
+
+            echo "[STEP] docker compose up -d"
             if ! docker compose $COMPOSE_ARGS up -d --remove-orphans; then
               echo "docker compose up failed. Printing diagnostics..."
               docker compose $COMPOSE_ARGS ps || true
@@ -167,7 +184,15 @@ jobs:
               exit 1
             fi
 
+            echo "[STEP] docker compose ps"
             docker compose $COMPOSE_ARGS ps
+            PS_EXIT=$?
+            if [ "$PS_EXIT" -ne 0 ]; then
+              echo "docker compose ps failed with exit code $PS_EXIT"
+              exit "$PS_EXIT"
+            fi
+
+            echo "[DONE] Deploy script completed successfully"
 
   monitor:
     name: Monitor (post-deploy)
