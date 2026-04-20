@@ -123,14 +123,38 @@ jobs:
             COMPOSE_ARGS="-f docker-compose.yml -f docker-compose.prod.yml"
 
             docker compose $COMPOSE_ARGS pull app worker
-            if ! docker compose $COMPOSE_ARGS up -d --remove-orphans --wait --wait-timeout 300; then
-              echo "Compose failed, printing service status and logs..."
+            docker compose $COMPOSE_ARGS up -d --remove-orphans
+
+            # Wait only for app container health to avoid false negatives from other service probes.
+            ATTEMPTS=0
+            MAX_ATTEMPTS=60
+            until [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; do
+              STATUS=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' nodejs-app 2>/dev/null || echo 'missing')
+              echo "nodejs-app status: $STATUS"
+
+              if [ "$STATUS" = "healthy" ] || [ "$STATUS" = "running" ]; then
+                break
+              fi
+
+              if [ "$STATUS" = "unhealthy" ] || [ "$STATUS" = "exited" ] || [ "$STATUS" = "missing" ]; then
+                echo "App failed to become healthy. Printing diagnostics..."
+                docker compose $COMPOSE_ARGS ps || true
+                docker inspect nodejs-app --format '{{json .State}}' || true
+                docker logs --tail=300 nodejs-app || true
+                docker logs --tail=300 nodejs-worker || true
+                docker compose $COMPOSE_ARGS logs --tail=200 redis postgres rabbitmq || true
+                exit 1
+              fi
+
+              ATTEMPTS=$((ATTEMPTS + 1))
+              sleep 5
+            done
+
+            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+              echo "Timed out waiting for nodejs-app health. Printing diagnostics..."
               docker compose $COMPOSE_ARGS ps || true
-              docker inspect nodejs-app --format '{{json .State.Health}}' || true
-              docker inspect nodejs-worker --format '{{json .State.Health}}' || true
-              docker logs --tail=200 nodejs-app || true
-              docker logs --tail=200 nodejs-worker || true
-              docker compose $COMPOSE_ARGS logs --tail=200 app worker redis postgres rabbitmq || true
+              docker inspect nodejs-app --format '{{json .State}}' || true
+              docker logs --tail=300 nodejs-app || true
               exit 1
             fi
 
