@@ -123,7 +123,16 @@ jobs:
             COMPOSE_ARGS="-f docker-compose.yml -f docker-compose.prod.yml"
 
             docker compose $COMPOSE_ARGS pull app worker
-            docker compose $COMPOSE_ARGS up -d --remove-orphans
+            if ! docker compose $COMPOSE_ARGS up -d --remove-orphans; then
+              echo "docker compose up failed. Printing diagnostics..."
+              docker compose $COMPOSE_ARGS ps || true
+              docker inspect nodejs-app --format '{{json .State}}' || true
+              docker inspect nodejs-worker --format '{{json .State}}' || true
+              docker logs --tail=300 nodejs-app || true
+              docker logs --tail=300 nodejs-worker || true
+              docker compose $COMPOSE_ARGS logs --tail=200 redis postgres rabbitmq || true
+              exit 1
+            fi
 
             # Wait only for app container health to avoid false negatives from other service probes.
             ATTEMPTS=0
