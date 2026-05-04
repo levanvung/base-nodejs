@@ -1,19 +1,20 @@
 #!/bin/sh
 
+set -e
+
 handle_signal() {
     echo "Received signal, shutting down gracefully..."
-    kill -TERM "$child_pid" 2>/dev/null
-    wait "$child_pid"
+    kill -TERM "$child_pid" 2>/dev/null || true
+    wait "$child_pid" 2>/dev/null || true
     exit 0
 }
 
 trap 'handle_signal' SIGINT SIGTERM
 
 if [ "$NODE_ENV" = "production" ]; then
-    npx prisma migrate deploy || echo "Migration skipped or failed"
+    echo "[entrypoint] Running migrations..."
+    npx prisma migrate deploy || echo "[entrypoint] Migration skipped or failed"
 fi
 
-"$@" &
-child_pid=$!
-
-wait "$child_pid"
+echo "[entrypoint] Starting server with: $@"
+exec "$@"
