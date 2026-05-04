@@ -42,4 +42,5 @@ USER nodejs
 
 EXPOSE 3008
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["node", "src/server.js"]
