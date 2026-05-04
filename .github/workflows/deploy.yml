@@ -33,6 +33,8 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma client
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vchat?schema=public
         run: npx prisma generate
 
       - name: Run tests
