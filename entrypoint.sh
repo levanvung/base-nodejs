@@ -16,5 +16,10 @@ if [ "$NODE_ENV" = "production" ]; then
     npx prisma migrate deploy || echo "[entrypoint] Migration skipped or failed"
 fi
 
+# If no command provided, default to running the app server
+if [ $# -eq 0 ]; then
+    set -- node src/server.js
+fi
+
 echo "[entrypoint] Starting server with: $@"
 exec "$@"
