@@ -66,9 +66,9 @@ services:
     container_name: postgres-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: vchat
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${DB_NAME:-vchat}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
