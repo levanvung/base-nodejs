@@ -3,6 +3,8 @@ services:
     restart: always
     mem_limit: 512m
     cpus: 0.50
+    ports:
+      - "3008:3008"
     logging:
       driver: json-file
       options:
@@ -56,3 +58,31 @@ services:
       options:
         max-size: "20m"
         max-file: "5"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy-proxy
+    profiles: ["https"]
+    restart: always
+    mem_limit: 256m
+    cpus: 0.20
+    depends_on:
+      app:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      CADDY_EMAIL: ${CADDY_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

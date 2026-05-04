@@ -5,6 +5,8 @@ on:
     branches: [main, master]
   push:
     branches: [main, master]
+  schedule:
+    - cron: '*/5 * * * *'
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -13,6 +15,8 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  APP_PUBLIC_URL: ${{ secrets.APP_PUBLIC_URL }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
 jobs:
   ci:
@@ -231,3 +235,39 @@ jobs:
             echo "Deployment failed"
             exit 1
           fi
+
+      - name: Notify Slack on failure
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"[nodejs-3.0] Deploy failed for `${{ github.ref_name }}`. Check GitHub Actions run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
+            "$SLACK_WEBHOOK_URL"
+
+  runtime-monitor:
+    name: Runtime Health Monitor
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+      - name: Check public health endpoint
+        run: |
+          if [ -z "$APP_PUBLIC_URL" ]; then
+            echo "APP_PUBLIC_URL secret is not set; skipping runtime check"
+            exit 0
+          fi
+
+          HTTP_CODE=$(curl -k -sS -o /tmp/health.out -w '%{http_code}' "$APP_PUBLIC_URL/")
+          echo "HTTP_CODE=$HTTP_CODE"
+          cat /tmp/health.out || true
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Health check failed"
+            exit 1
+          fi
+
+      - name: Notify Slack on runtime failure
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"[nodejs-3.0] Runtime health check failed for `${{ env.APP_PUBLIC_URL }}`. Please inspect the VPS containers and logs."}' \
+            "$SLACK_WEBHOOK_URL"

@@ -1,0 +1,4 @@
+{env.APP_DOMAIN} {
+    encode gzip
+    reverse_proxy app:3008
+}
