@@ -49,11 +49,34 @@ class AuthService {
         // Gửi email qua queue
         await sendEmailToQueue({
             to: email,
-            subject: 'Mã xác thực đăng ký tài khoản',
+            subject: 'Xác thực đăng ký tài khoản VChat',
             html: `
-                <h1>Mã OTP của bạn là: <b>${otpCode}</b></h1>
-                <p>Mã có hiệu lực trong vòng ${OtpConfig.EXPIRY_MINUTES} phút.</p>
-                <p>Vui lòng không chia sẻ mã này cho ai khác.</p>
+                <html>
+                    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                            <div style="text-align: center; margin-bottom: 30px;">
+                                <h1 style="color: #2c3e50; margin: 0;">Xác Thực Đăng Ký</h1>
+                            </div>
+                            
+                            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                                <p style="margin: 0 0 15px 0;">Xin chào,</p>
+                                <p style="margin: 0 0 20px 0;">Cảm ơn bạn đã đăng ký tài khoản VChat. Dưới đây là mã xác thực của bạn:</p>
+                                
+                                <div style="background-color: #fff; border: 2px solid #3498db; padding: 20px; border-radius: 5px; text-align: center; margin: 20px 0;">
+                                    <h2 style="color: #3498db; letter-spacing: 5px; margin: 0; font-family: 'Courier New', monospace;">${otpCode}</h2>
+                                </div>
+                                
+                                <p style="margin: 20px 0; color: #e74c3c; font-weight: bold;">⏰ Mã có hiệu lực trong ${OtpConfig.EXPIRY_MINUTES} phút</p>
+                                <p style="margin: 0; color: #7f8c8d; font-size: 14px;">⚠️ Vui lòng không chia sẻ mã này cho bất kỳ ai. VChat sẽ không bao giờ yêu cầu bạn cung cấp mã này qua tin nhắn hoặc cuộc gọi.</p>
+                            </div>
+                            
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #7f8c8d; font-size: 12px; text-align: center;">
+                                <p style="margin: 5px 0;">© 2026 VChat. Tất cả quyền được bảo lưu.</p>
+                                <p style="margin: 5px 0;">Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.</p>
+                            </div>
+                        </div>
+                    </body>
+                </html>
             `,
         });
     }
@@ -221,11 +244,34 @@ class AuthService {
 
         await sendEmailToQueue({
             to: email,
-            subject: 'Mã xác thực quên mật khẩu',
+            subject: 'Yêu cầu đặt lại mật khẩu VChat',
             html: `
-                <h1>Mã OTP của bạn là: <b>${otpCode}</b></h1>
-                <p>Mã có hiệu lực trong vòng ${OtpConfig.EXPIRY_MINUTES} phút.</p>
-                <p>Vui lòng không chia sẻ mã này cho ai khác.</p>
+                <html>
+                    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                            <div style="text-align: center; margin-bottom: 30px;">
+                                <h1 style="color: #2c3e50; margin: 0;">Đặt Lại Mật Khẩu</h1>
+                            </div>
+                            
+                            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                                <p style="margin: 0 0 15px 0;">Xin chào,</p>
+                                <p style="margin: 0 0 20px 0;">Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản VChat của bạn. Dưới đây là mã xác thực:</p>
+                                
+                                <div style="background-color: #fff; border: 2px solid #3498db; padding: 20px; border-radius: 5px; text-align: center; margin: 20px 0;">
+                                    <h2 style="color: #3498db; letter-spacing: 5px; margin: 0; font-family: 'Courier New', monospace;">${otpCode}</h2>
+                                </div>
+                                
+                                <p style="margin: 20px 0; color: #e74c3c; font-weight: bold;">⏰ Mã có hiệu lực trong ${OtpConfig.EXPIRY_MINUTES} phút</p>
+                                <p style="margin: 0; color: #7f8c8d; font-size: 14px;">⚠️ Vui lòng không chia sẻ mã này cho bất kỳ ai. Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+                            </div>
+                            
+                            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #7f8c8d; font-size: 12px; text-align: center;">
+                                <p style="margin: 5px 0;">© 2026 VChat. Tất cả quyền được bảo lưu.</p>
+                                <p style="margin: 5px 0;">Nếu bạn không yêu cầu email này, vui lòng bỏ qua.</p>
+                            </div>
+                        </div>
+                    </body>
+                </html>
             `,
         });
     }

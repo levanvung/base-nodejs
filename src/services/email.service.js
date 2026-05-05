@@ -19,8 +19,15 @@ const sendMail = async({to, subject, text, html}) => {
             from: email.from,
             to,
             subject,
-            text,
-            html
+            text: text || 'VChat',
+            html,
+            replyTo: 'support@vchat.local',
+            headers: {
+                'X-Priority': '3',
+                'X-Mailer': 'VChat-Mailer/1.0',
+                'List-Unsubscribe': '<mailto:support@vchat.local>',
+                'Precedence': 'bulk'
+            }
         })
         console.log("Message sent: %s", info.messageId);
         return info;
