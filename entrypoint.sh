@@ -13,7 +13,7 @@ trap 'handle_signal' SIGINT SIGTERM
 
 if [ "$NODE_ENV" = "production" ]; then
     echo "[entrypoint] Running migrations..."
-    npx knex migrate:latest --knexfile knexfile.js || echo "[entrypoint] Migration skipped or failed"
+    npx knex migrate:latest --knexfile knexfile.js --env production || echo "[entrypoint] Migration skipped or failed"
 fi
 
 # If no command provided, default to running the app server
