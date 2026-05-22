@@ -46,10 +46,24 @@ app.use((req, res, next) => {
 });
 
 // ==================== CORS ====================
+const isLocalOrigin = (origin) => {
+    try {
+        const url = new URL(origin);
+        return ['localhost', '127.0.0.1', '::1'].includes(url.hostname);
+    } catch {
+        return false;
+    }
+};
+
 const corsOptions = {
     origin: (origin, callback) => {
-        const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000').split(',');
-        if (!origin || allowedOrigins.includes(origin)) {
+        const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
+            .split(',')
+            .map((value) => value.trim())
+            .filter(Boolean);
+        const allowLocalhost = process.env.CORS_ALLOW_LOCALHOST === 'true';
+
+        if (!origin || allowedOrigins.includes(origin) || (allowLocalhost && isLocalOrigin(origin))) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));

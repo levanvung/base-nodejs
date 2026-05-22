@@ -35,7 +35,7 @@ COPY --from=builder /app/knexfile.js ./
 COPY --from=builder /app/prisma.config.ts ./
 COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
 
-RUN chmod +x ./entrypoint.sh
+RUN sed -i 's/\r$//' ./entrypoint.sh && chmod +x ./entrypoint.sh
 RUN mkdir -p /app/logs && chown -R nodejs:nodejs /app
 
 USER nodejs
