@@ -18,8 +18,11 @@ Set these values in the VPS `.env` file:
 
 - `APP_DOMAIN=api.example.com`
 - `CADDY_EMAIL=admin@example.com`
+- `APP_PUBLIC_URL=https://api.example.com`
 
 Create a DNS `A` record for `APP_DOMAIN` that points to the VPS IP. Caddy will request and renew the TLS certificate automatically.
+
+Google OAuth should use the HTTPS domain URL above. Public HTTP IPs are usually rejected by Google OAuth, so add the exact redirect URI like `https://api.example.com/api/v1/auth/google/callback` in Google Cloud Console.
 
 When domain and DNS are ready, start Caddy with the `https` profile:
 
