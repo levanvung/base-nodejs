@@ -63,3 +63,19 @@ For HTTPS mode, update firewall rules to allow `22`, `80`, `443`, and close `300
 2. GitHub Actions builds and pushes the image.
 3. The VPS pulls the image and restarts the stack.
 4. Optional: after buying a domain, enable Caddy profile for HTTPS.
+
+## Frontend React
+
+Mình đã thêm một frontend React/Vite trong thư mục `frontend/` để ghép các API hiện có của backend.
+
+Chạy local:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Mặc định frontend sẽ proxy `/api` về `http://localhost:3008`, nên bạn không cần sửa backend khi test local.
+
+Lưu ý production: frontend nên được phục vụ cùng host/domain với backend để tránh vấn đề CSRF và cookie same-site.

@@ -55,15 +55,35 @@ const isLocalOrigin = (origin) => {
     }
 };
 
+const defaultOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+];
+
+const getAllowedOrigins = () => {
+    const envOrigins = (process.env.CORS_ORIGINS || '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+    const appPublicUrl = process.env.APP_PUBLIC_URL?.trim();
+    const appDomain = process.env.APP_DOMAIN?.trim();
+    const deploymentOrigins = [
+        appPublicUrl,
+        appDomain ? `https://${appDomain}` : null,
+        appDomain ? `http://${appDomain}` : null,
+    ].filter(Boolean);
+
+    return new Set([...defaultOrigins, ...envOrigins, ...deploymentOrigins]);
+};
+
 const corsOptions = {
     origin: (origin, callback) => {
-        const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
-            .split(',')
-            .map((value) => value.trim())
-            .filter(Boolean);
-        const allowLocalhost = process.env.CORS_ALLOW_LOCALHOST === 'true';
+        const allowedOrigins = getAllowedOrigins();
 
-        if (!origin || allowedOrigins.includes(origin) || (allowLocalhost && isLocalOrigin(origin))) {
+        if (!origin || allowedOrigins.has(origin) || isLocalOrigin(origin) || process.env.NODE_ENV !== 'production') {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
